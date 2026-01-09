@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Wallet, TrendingUp, CreditCard, Clock, ArrowDownCircle, Receipt, X, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MetricsCard } from '@/components/ui/extension/metrics-card';
@@ -101,31 +101,24 @@ export function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12 space-y-8">
           <OnboardingWizard />
-          <AnimatePresence>
-            {showMonthResetBanner && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden mb-6"
-              >
-                <div className="bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-200/50">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/20 p-2 rounded-xl">
-                      <Sparkles className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold">New Month Started!</h4>
-                      <p className="text-sm text-emerald-50">Your active spending dashboard has been reset for {format(new Date(), 'MMMM')}.</p>
-                    </div>
+          {showMonthResetBanner && (
+            <div className="mb-6 overflow-hidden">
+              <div className="bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-200/50">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/20 p-2 rounded-xl">
+                    <Sparkles className="h-6 w-6" />
                   </div>
-                  <Button variant="ghost" size="icon" onClick={handleDismissBanner} className="text-white hover:bg-white/10">
-                    <X className="h-5 w-5" />
-                  </Button>
+                  <div>
+                    <h4 className="font-bold">New Month Started!</h4>
+                    <p className="text-sm text-emerald-50">Your active spending dashboard has been reset for {format(new Date(), 'MMMM')}.</p>
+                  </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <Button variant="ghost" size="icon" onClick={handleDismissBanner} className="text-white hover:bg-white/10">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Financial Health</h1>
@@ -141,21 +134,14 @@ export function HomePage() {
             <MetricsCard title="Balance Left" value={metrics.remaining} currency={settings?.currency} icon={<TrendingUp className="h-4 w-4" />} />
             <MetricsCard title="Daily Average" value={metrics.dailyAverage} currency={settings?.currency} icon={<Clock className="h-4 w-4" />} />
           </div>
-          <AnimatePresence>
-            {settings?.carryForward && metrics.carriedBalance > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="flex items-center gap-3 p-4 bg-primary/5 text-primary rounded-xl border border-primary/10"
-              >
-                <ArrowDownCircle className="h-5 w-5 shrink-0" />
-                <p className="text-sm font-medium">
-                  Excellent work! {settings.currency} {metrics.carriedBalance.toLocaleString()} carried forward from last month.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {settings?.carryForward && metrics.carriedBalance > 0 && (
+            <div className="flex items-center gap-3 p-4 bg-primary/5 text-primary rounded-xl border border-primary/10">
+              <ArrowDownCircle className="h-5 w-5 shrink-0" />
+              <p className="text-sm font-medium">
+                Excellent work! {settings.currency} {metrics.carriedBalance.toLocaleString()} carried forward from last month.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             <div className="xl:col-span-2 space-y-6">
               <OverviewCharts expenses={metrics.currentMonthExpenses} />
