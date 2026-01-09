@@ -66,18 +66,14 @@ export function HomePage() {
   return (
     <AppLayout title="Overview">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="py-8 md:py-10 lg:py-12 space-y-8"
-        >
+        <div className="py-8 md:py-10 lg:py-12 space-y-8">
           <OnboardingWizard />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Financial Health</h1>
               <p className="text-muted-foreground">Monitoring your budget for {format(new Date(), 'MMMM yyyy')}.</p>
             </div>
-            <Button onClick={() => setIsAddOpen(true)} className="btn-gradient shadow-primary">
+            <Button onClick={() => setIsAddOpen(true)} className="btn-gradient">
               <Plus className="mr-2 h-4 w-4" /> Add Expense
             </Button>
           </div>
@@ -90,10 +86,10 @@ export function HomePage() {
           <AnimatePresence>
             {settings?.carryForward && carriedBalance > 0 && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/50"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="flex items-center gap-3 p-4 bg-primary/5 text-primary rounded-xl border border-primary/10"
               >
                 <ArrowDownCircle className="h-5 w-5 shrink-0" />
                 <p className="text-sm font-medium">
@@ -106,10 +102,10 @@ export function HomePage() {
             <div className="xl:col-span-2 space-y-6">
               <OverviewCharts expenses={currentMonthExpenses} />
             </div>
-            <div className="bg-white dark:bg-card rounded-2xl p-6 shadow-soft space-y-4 border">
+            <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4 border">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">Recent Activity</h3>
-                <Button variant="ghost" size="sm" asChild className="text-xs hover:bg-accent">
+                <h3 className="font-semibold">Recent Activity</h3>
+                <Button variant="ghost" size="sm" asChild className="text-xs">
                   <Link to="/history">View All</Link>
                 </Button>
               </div>
@@ -120,40 +116,33 @@ export function HomePage() {
                       <Receipt className="h-8 w-8" />
                     </div>
                     <p className="text-sm font-medium">No transactions this month</p>
-                    <p className="text-xs opacity-60">Your spending history will appear here.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {currentMonthExpenses.slice(0, 6).map((expense, idx) => (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        key={expense.id}
-                        className="flex items-center justify-between group p-2 rounded-lg hover:bg-accent/50 transition-colors"
-                      >
+                    {currentMonthExpenses.slice(0, 6).map((expense) => (
+                      <div key={expense.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-primary">
                             {expense.category[0]}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-foreground truncate max-w-[120px]">
+                            <p className="text-sm font-medium truncate max-w-[120px]">
                               {expense.description || expense.category}
                             </p>
                             <p className="text-[10px] text-muted-foreground">{format(new Date(expense.date), 'MMM d, h:mm a')}</p>
                           </div>
                         </div>
-                        <div className="text-sm font-bold text-foreground">
+                        <div className="text-sm font-bold">
                           -{settings?.currency} {expense.amount.toLocaleString()}
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </AppLayout>
   );

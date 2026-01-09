@@ -28,7 +28,6 @@ export class ExpenseEntity extends IndexedEntity<Expense> {
     date: "",
     currency: "USD"
   };
-  // Ensure state consistency during creation or fetch
   protected override async ensureState(): Promise<Expense> {
     const s = await super.ensureState();
     if (!s.date) {
@@ -38,26 +37,27 @@ export class ExpenseEntity extends IndexedEntity<Expense> {
   }
 }
 export type ChatBoardState = Chat & { messages: ChatMessage[] };
-const SEED_CHAT_BOARDS: ChatBoardState[] = MOCK_CHATS.map(c => ({
-  ...c,
-  messages: MOCK_CHAT_MESSAGES.filter(m => m.chatId === c.id),
-}));
 export class ChatBoardEntity extends IndexedEntity<ChatBoardState> {
   static readonly entityName = "chat";
   static readonly indexName = "chats";
   static readonly initialState: ChatBoardState = { id: "", title: "", messages: [] };
-  static seedData = SEED_CHAT_BOARDS;
+  static get seedData() {
+    return MOCK_CHATS.map(c => ({
+      ...c,
+      messages: MOCK_CHAT_MESSAGES.filter(m => m.chatId === c.id),
+    }));
+  }
   async listMessages(): Promise<ChatMessage[]> {
     const state = await this.getState();
     return state.messages || [];
   }
   async sendMessage(userId: string, text: string): Promise<ChatMessage> {
-    const msg: ChatMessage = { 
-      id: crypto.randomUUID(), 
-      chatId: this.id, 
-      userId, 
-      text, 
-      ts: Date.now() 
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      chatId: this.id,
+      userId,
+      text,
+      ts: Date.now()
     };
     await this.mutate(s => ({ ...s, messages: [...(s.messages || []), msg] }));
     return msg;

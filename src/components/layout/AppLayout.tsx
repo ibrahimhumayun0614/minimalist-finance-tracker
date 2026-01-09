@@ -6,7 +6,6 @@ import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
 import { Toaster } from "@/components/ui/sonner";
 import { AddExpenseSheet } from "@/components/expenses/AddExpenseSheet";
-import { ThemeToggle } from "@/components/ThemeToggle";
 type AppLayoutProps = {
   children: React.ReactNode;
   container?: boolean;
@@ -42,7 +41,6 @@ export function AppLayout({ children, container = false, className, contentClass
               <kbd className="font-sans">K</kbd>
               <span>Quick Add</span>
             </div>
-            <ThemeToggle className="static" />
           </div>
         </header>
         <main className="flex-1 overflow-x-hidden">
