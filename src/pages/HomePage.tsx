@@ -12,7 +12,6 @@ import { format, startOfMonth, subMonths, endOfMonth, isWithinInterval } from 'd
 import { AppLayout } from '@/components/layout/AppLayout';
 import { calculateSavings } from '@/lib/utils';
 import type { Expense, UserSettings } from '@shared/types';
-import { toast } from 'sonner';
 export function HomePage() {
   const expenses = useAppStore(s => s.expenses);
   const setExpenses = useAppStore(s => s.setExpenses);
@@ -21,24 +20,26 @@ export function HomePage() {
   const setIsAddOpen = useAppStore(s => s.setIsAddExpenseOpen);
   const [showMonthResetBanner, setShowMonthResetBanner] = useState(false);
   useEffect(() => {
+    let mounted = true;
     const fetchData = async () => {
       try {
         const [settingsData, expensesPage] = await Promise.all([
           api<UserSettings>('/api/settings'),
           api<{ items: Expense[] }>('/api/expenses')
         ]);
+        if (!mounted) return;
         setSettings(settingsData);
-        setExpenses(expensesPage.items);
-        // Check for new month transition
+        setExpenses(expensesPage.items ?? []);
         const currentMonthKey = format(new Date(), 'yyyy-MM');
         if (settingsData.onboarded && settingsData.lastViewedMonth && settingsData.lastViewedMonth !== currentMonthKey) {
           setShowMonthResetBanner(true);
         }
       } catch (err) {
-        console.error("Dashboard failed to load", err);
+        console.error("Dashboard failed to load", err instanceof Error ? err.message : err);
       }
     };
     fetchData();
+    return () => { mounted = false; };
   }, [setSettings, setExpenses]);
   const handleDismissBanner = async () => {
     setShowMonthResetBanner(false);
@@ -53,23 +54,31 @@ export function HomePage() {
       console.error("Failed to update last viewed month", e);
     }
   };
-  const { totalSpent, effectiveBudget, remaining, spentPercent, dailyAverage, carriedBalance, currentMonthExpenses } = useMemo(() => {
+  const metrics = useMemo(() => {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
-    // STRICTLY current month filter for dashboard metrics
-    const filtered = expenses.filter(e => 
-      isWithinInterval(new Date(e.date), { start: currentMonthStart, end: currentMonthEnd })
-    );
-    const spent = filtered.reduce((sum, e) => sum + e.amount, 0);
+    const safeExpenses = expenses ?? [];
+    const filtered = safeExpenses.filter(e => {
+      try {
+        return isWithinInterval(new Date(e.date), { start: currentMonthStart, end: currentMonthEnd });
+      } catch {
+        return false;
+      }
+    });
+    const spent = filtered.reduce((sum, e) => sum + (e.amount || 0), 0);
     const baseBudget = settings?.monthlyBudget ?? 0;
     let carried = 0;
     if (settings?.carryForward) {
       const prevMonthStart = startOfMonth(subMonths(now, 1));
       const prevMonthEnd = endOfMonth(subMonths(now, 1));
-      const prevMonthExpenses = expenses.filter(e =>
-        isWithinInterval(new Date(e.date), { start: prevMonthStart, end: prevMonthEnd })
-      );
+      const prevMonthExpenses = safeExpenses.filter(e => {
+        try {
+          return isWithinInterval(new Date(e.date), { start: prevMonthStart, end: prevMonthEnd });
+        } catch {
+          return false;
+        }
+      });
       carried = calculateSavings(prevMonthExpenses, baseBudget);
     }
     const effective = baseBudget + carried;
@@ -127,13 +136,13 @@ export function HomePage() {
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricsCard title="Effective Budget" value={effectiveBudget} currency={settings?.currency} icon={<Wallet className="h-4 w-4" />} />
-            <MetricsCard title="Total Spent" value={totalSpent} currency={settings?.currency} icon={<CreditCard className="h-4 w-4" />} trend={{ value: spentPercent, label: "of budget", isPositive: totalSpent <= effectiveBudget }} />
-            <MetricsCard title="Balance Left" value={remaining} currency={settings?.currency} icon={<TrendingUp className="h-4 w-4" />} />
-            <MetricsCard title="Daily Average" value={dailyAverage} currency={settings?.currency} icon={<Clock className="h-4 w-4" />} />
+            <MetricsCard title="Effective Budget" value={metrics.effectiveBudget} currency={settings?.currency} icon={<Wallet className="h-4 w-4" />} />
+            <MetricsCard title="Total Spent" value={metrics.totalSpent} currency={settings?.currency} icon={<CreditCard className="h-4 w-4" />} trend={{ value: metrics.spentPercent, label: "of budget", isPositive: metrics.totalSpent <= metrics.effectiveBudget }} />
+            <MetricsCard title="Balance Left" value={metrics.remaining} currency={settings?.currency} icon={<TrendingUp className="h-4 w-4" />} />
+            <MetricsCard title="Daily Average" value={metrics.dailyAverage} currency={settings?.currency} icon={<Clock className="h-4 w-4" />} />
           </div>
           <AnimatePresence>
-            {settings?.carryForward && carriedBalance > 0 && (
+            {settings?.carryForward && metrics.carriedBalance > 0 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -142,14 +151,14 @@ export function HomePage() {
               >
                 <ArrowDownCircle className="h-5 w-5 shrink-0" />
                 <p className="text-sm font-medium">
-                  Excellent work! {settings.currency} {carriedBalance.toLocaleString()} carried forward from last month.
+                  Excellent work! {settings.currency} {metrics.carriedBalance.toLocaleString()} carried forward from last month.
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             <div className="xl:col-span-2 space-y-6">
-              <OverviewCharts expenses={currentMonthExpenses} />
+              <OverviewCharts expenses={metrics.currentMonthExpenses} />
             </div>
             <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4 border">
               <div className="flex items-center justify-between">
@@ -159,7 +168,7 @@ export function HomePage() {
                 </Button>
               </div>
               <div className="space-y-4">
-                {currentMonthExpenses.length === 0 ? (
+                {metrics.currentMonthExpenses.length === 0 ? (
                   <div className="py-20 flex flex-col items-center justify-center text-muted-foreground">
                     <div className="p-4 bg-secondary rounded-full mb-3 opacity-50">
                       <Receipt className="h-8 w-8" />
@@ -168,7 +177,7 @@ export function HomePage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {currentMonthExpenses.slice(0, 6).map((expense) => (
+                    {metrics.currentMonthExpenses.slice(0, 6).map((expense) => (
                       <div key={expense.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-primary">

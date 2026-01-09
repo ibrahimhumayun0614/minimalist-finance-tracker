@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Download, Trash2, Filter, Edit2, Plus, Calendar } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppStore } from '@/lib/store';
-import { format, isWithinInterval, startOfMonth, endOfMonth, parse } from 'date-fns';
+import { format, isWithinInterval, startOfMonth, endOfMonth, parse, isValid } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,29 +20,37 @@ export function HistoryPage() {
   const setIsAddOpen = useAppStore(s => s.setIsAddExpenseOpen);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<ExpenseCategory | 'All'>('All');
-  const [selectedMonth, setSelectedMonth] = useState<string>('All'); // YYYY-MM or 'All'
+  const [selectedMonth, setSelectedMonth] = useState<string>('All');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const availableMonths = useMemo(() => getAvailableMonths(expenses), [expenses]);
+  const availableMonths = useMemo(() => getAvailableMonths(expenses ?? []), [expenses]);
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(e => {
-      const matchesSearch = e.description.toLowerCase().includes(search.toLowerCase()) ||
-                           e.category.toLowerCase().includes(search.toLowerCase());
+    const safeExpenses = expenses ?? [];
+    return safeExpenses.filter(e => {
+      const matchesSearch = (e.description || "").toLowerCase().includes(search.toLowerCase()) ||
+                           (e.category || "").toLowerCase().includes(search.toLowerCase());
       const matchesCategory = category === 'All' || e.category === category;
       let matchesMonth = true;
       if (selectedMonth !== 'All') {
-        const date = new Date(e.date);
-        const start = startOfMonth(parse(selectedMonth, 'yyyy-MM', new Date()));
-        const end = endOfMonth(parse(selectedMonth, 'yyyy-MM', new Date()));
-        matchesMonth = isWithinInterval(date, { start, end });
+        try {
+          const date = new Date(e.date);
+          const parsedMonth = parse(selectedMonth, 'yyyy-MM', new Date());
+          if (isValid(parsedMonth)) {
+            const start = startOfMonth(parsedMonth);
+            const end = endOfMonth(parsedMonth);
+            matchesMonth = isWithinInterval(date, { start, end });
+          }
+        } catch {
+          matchesMonth = true;
+        }
       }
       return matchesSearch && matchesCategory && matchesMonth;
     });
   }, [expenses, search, category, selectedMonth]);
   const totalFiltered = useMemo(() => {
-    return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+    return filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [filteredExpenses]);
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this expense?")) return;
+    if (!window.confirm("Are you sure you want to delete this expense?")) return;
     try {
       await api(`/api/expenses/${id}`, { method: 'DELETE' });
       removeExpense(id);
@@ -98,11 +106,14 @@ export function HistoryPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All History</SelectItem>
-                {availableMonths.map(month => (
-                  <SelectItem key={month} value={month}>
-                    {format(parse(month, 'yyyy-MM', new Date()), 'MMMM yyyy')}
-                  </SelectItem>
-                ))}
+                {availableMonths.map(month => {
+                  const d = parse(month, 'yyyy-MM', new Date());
+                  return (
+                    <SelectItem key={month} value={month}>
+                      {isValid(d) ? format(d, 'MMMM yyyy') : month}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory | 'All')}>
@@ -168,7 +179,7 @@ export function HistoryPage() {
             </Table>
             <div className="p-4 bg-secondary/30 border-t flex justify-between items-center text-sm">
               <span className="text-muted-foreground">
-                Showing {filteredExpenses.length} transactions {selectedMonth !== 'All' ? `for ${format(parse(selectedMonth, 'yyyy-MM', new Date()), 'MMMM yyyy')}` : ''}
+                Showing {filteredExpenses.length} transactions
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Period Total:</span>

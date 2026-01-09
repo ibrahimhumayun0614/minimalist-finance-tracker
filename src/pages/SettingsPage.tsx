@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -26,15 +26,22 @@ export function SettingsPage() {
   const settings = useAppStore(s => s.settings);
   const setSettings = useAppStore(s => s.setSettings);
   const setExpenses = useAppStore(s => s.setExpenses);
-  const [budget, setBudget] = useState(settings?.monthlyBudget.toString() || '');
-  const [currency, setCurrency] = useState<Currency>(settings?.currency || 'USD');
-  const [carryForward, setCarryForward] = useState(settings?.carryForward || false);
+  const [budget, setBudget] = useState('');
+  const [currency, setCurrency] = useState<Currency>('USD');
+  const [carryForward, setCarryForward] = useState(false);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (settings) {
+      setBudget(settings.monthlyBudget.toString());
+      setCurrency(settings.currency);
+      setCarryForward(settings.carryForward);
+    }
+  }, [settings]);
   const handleSave = async () => {
     setLoading(true);
     try {
       const updated: Partial<UserSettings> = {
-        monthlyBudget: Number(budget),
+        monthlyBudget: Number(budget) || 0,
         currency,
         carryForward
       };

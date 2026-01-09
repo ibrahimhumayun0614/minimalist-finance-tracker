@@ -3,7 +3,12 @@ import type { Env } from './core-utils';
 import { UserSettingsEntity, ExpenseEntity } from "./entities";
 import { ok, bad } from './core-utils';
 import type { Expense, UserSettings } from "../shared/types";
+/**
+ * User routes module
+ * Loaded dynamically by worker/index.ts
+ */
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  console.log("[WORKER] Initializing user routes");
   // SETTINGS
   app.get('/api/settings', async (c) => {
     try {
@@ -11,6 +16,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const state = await settings.getState();
       return ok(c, state);
     } catch (e) {
+      console.error("[WORKER] Error fetching settings:", e);
       return bad(c, 'Failed to fetch settings');
     }
   });
@@ -22,6 +28,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const updated = await settings.getState();
       return ok(c, updated);
     } catch (e) {
+      console.error("[WORKER] Error updating settings:", e);
       return bad(c, 'Failed to update settings');
     }
   });
@@ -30,13 +37,15 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     try {
       const cq = c.req.query('cursor');
       const lq = c.req.query('limit');
+      const limit = lq ? Math.max(1, (Number(lq) | 0)) : 1000;
       const page = await ExpenseEntity.list(
         c.env,
         cq ?? null,
-        lq ? Math.max(1, (Number(lq) | 0)) : 1000 // Higher limit for history
+        limit
       );
       return ok(c, page);
     } catch (e) {
+      console.error("[WORKER] Error listing expenses:", e);
       return bad(c, 'Failed to list expenses');
     }
   });
@@ -52,6 +61,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       });
       return ok(c, expense);
     } catch (e) {
+      console.error("[WORKER] Error creating expense:", e);
       return bad(c, 'Failed to create expense');
     }
   });
@@ -65,6 +75,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const updated = await entity.getState();
       return ok(c, updated);
     } catch (e) {
+      console.error("[WORKER] Error updating expense:", e);
       return bad(c, 'Failed to update expense');
     }
   });
@@ -75,6 +86,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const deletedCount = await ExpenseEntity.deleteMany(c.env, ids);
       return ok(c, { deletedCount });
     } catch (e) {
+      console.error("[WORKER] Error clearing expenses:", e);
       return bad(c, 'Failed to clear expenses');
     }
   });
@@ -84,6 +96,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const deleted = await ExpenseEntity.delete(c.env, id);
       return ok(c, { id, deleted });
     } catch (e) {
+      console.error("[WORKER] Error deleting expense:", e);
       return bad(c, 'Failed to delete expense');
     }
   });
