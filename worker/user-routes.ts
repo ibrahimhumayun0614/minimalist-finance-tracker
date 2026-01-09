@@ -1,19 +1,21 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { UserSettingsEntity, ExpenseEntity } from "./entities";
-import { ok, bad, isStr } from './core-utils';
+import { ok, bad } from './core-utils';
 import type { Expense, UserSettings } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // SETTINGS
   app.get('/api/settings', async (c) => {
     const settings = new UserSettingsEntity(c.env, 'default');
-    return ok(c, await settings.getState());
+    const state = await settings.getState();
+    return ok(c, state);
   });
   app.post('/api/settings', async (c) => {
     const body = (await c.req.json()) as Partial<UserSettings>;
     const settings = new UserSettingsEntity(c.env, 'default');
     await settings.patch(body);
-    return ok(c, await settings.getState());
+    const updated = await settings.getState();
+    return ok(c, updated);
   });
   // EXPENSES
   app.get('/api/expenses', async (c) => {
@@ -27,13 +29,20 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, page);
   });
   app.post('/api/expenses', async (c) => {
-    const body = (await c.req.json()) as Omit<Expense, 'id'>;
-    if (!body.amount || !body.category) return bad(c, 'Invalid expense data');
-    const expense = await ExpenseEntity.create(c.env, {
-      ...body,
-      id: crypto.randomUUID()
-    });
-    return ok(c, expense);
+    try {
+      const body = (await c.req.json()) as Omit<Expense, 'id'>;
+      // Robust validation for amount (allow 0, but not NaN or undefined)
+      if (typeof body.amount !== 'number' || isNaN(body.amount) || !body.category) {
+        return bad(c, 'Invalid expense data: amount and category are required');
+      }
+      const expense = await ExpenseEntity.create(c.env, {
+        ...body,
+        id: crypto.randomUUID()
+      });
+      return ok(c, expense);
+    } catch (e) {
+      return bad(c, 'Failed to parse request body');
+    }
   });
   app.put('/api/expenses/:id', async (c) => {
     const id = c.req.param('id');
