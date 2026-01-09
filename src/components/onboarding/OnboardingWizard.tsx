@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +32,7 @@ export function OnboardingWizard() {
         body: JSON.stringify(newSettings)
       });
       setSettings(result);
-      toast.success("Welcome to Minimalist Personal Finance Tracker!");
+      toast.success("Welcome to FiscalFlow!");
     } catch (err) {
       toast.error("Setup failed. Please try again.");
     } finally {
@@ -43,7 +43,7 @@ export function OnboardingWizard() {
     <Dialog open={!settings.onboarded}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Welcome to Minimalist Personal Finance Tracker</DialogTitle>
+          <DialogTitle>Welcome to FiscalFlow</DialogTitle>
           <DialogDescription>Let's set up your personal finance command center.</DialogDescription>
         </DialogHeader>
         {step === 1 && (
@@ -66,9 +66,9 @@ export function OnboardingWizard() {
         {step === 2 && (
           <div className="space-y-4 py-4">
             <Label>Monthly Budget Target ({currency})</Label>
-            <Input
-              type="number"
-              placeholder="e.g. 5000"
+            <Input 
+              type="number" 
+              placeholder="e.g. 50000" 
               value={budget}
               onChange={e => setBudget(e.target.value)}
               className="bg-secondary"
