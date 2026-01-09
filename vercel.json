@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/settings", "destination": "/api/settings.ts" },
+    { "source": "/api/expenses", "destination": "/api/expenses.ts" },
+    { "source": "/api/expenses/:id", "destination": "/api/expenses.ts?id=:id" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/*.ts": {
+      "runtime": "nodejs20.x",
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
+}

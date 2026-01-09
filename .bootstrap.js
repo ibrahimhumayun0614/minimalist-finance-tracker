@@ -77,10 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun add xlsx date-fns lucide-react zustand framer-motion clsx tailwind-merge",
-    "bun add date-fns lucide-react zustand framer-motion clsx tailwind-merge"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
