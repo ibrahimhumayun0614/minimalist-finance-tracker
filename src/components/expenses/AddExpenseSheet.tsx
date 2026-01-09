@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/sheet"; // Actually from @/components/ui/button
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,10 +58,10 @@ export function AddExpenseSheet() {
         <form onSubmit={handleSubmit} className="space-y-6 py-6">
           <div className="space-y-2">
             <Label htmlFor="amount">Amount</Label>
-            <Input 
-              id="amount" 
-              type="number" 
-              placeholder="0.00" 
+            <Input
+              id="amount"
+              type="number"
+              placeholder="0.00"
               value={amount}
               onChange={e => setAmount(e.target.value)}
               className="bg-secondary"
@@ -83,9 +83,9 @@ export function AddExpenseSheet() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="desc">Description</Label>
-            <Input 
-              id="desc" 
-              placeholder="What was this for?" 
+            <Input
+              id="desc"
+              placeholder="What was this for?"
               value={description}
               onChange={e => setDescription(e.target.value)}
               className="bg-secondary"

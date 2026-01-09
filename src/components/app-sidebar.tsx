@@ -1,72 +1,80 @@
-/* This is a demo sidebar. **COMPULSORY** Edit this file to customize the sidebar OR remove it from appLayout OR don't use appLayout at all */
 import React from "react";
-import { Home, Layers, Compass, Star, Settings, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, History, Settings, PieChart, CreditCard } from "lucide-react";
+import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarSeparator,
-  SidebarInput,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuAction,
-  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
-
 export function AppSidebar(): JSX.Element {
+  const location = useLocation();
+  const menuItems = [
+    { title: "Dashboard", icon: LayoutDashboard, path: "/" },
+    { title: "History", icon: History, path: "/history" },
+    { title: "Settings", icon: Settings, path: "/settings" },
+  ];
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-border/50">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500" />
-          <span className="text-sm font-medium">Demo Sidebar</span>
+        <div className="flex items-center gap-3 px-4 py-6">
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-200 shadow-lg flex items-center justify-center">
+            <PieChart className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-lg font-bold tracking-tight">FiscalFlow</span>
         </div>
-        <SidebarInput placeholder="Search" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive>
-                <a href="#"><Home /> <span>Home</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Layers /> <span>Projects</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuAction>
-                <Star className="size-4" />
-              </SidebarMenuAction>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Compass /> <span>Explore</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+          <SidebarGroupLabel className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Main Menu
+          </SidebarGroupLabel>
+          <SidebarMenu className="px-2 space-y-1">
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname === item.path}
+                  className="rounded-lg h-11"
+                >
+                  <Link to={item.path}>
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium">{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Quick Links</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Star /> <span>Starred</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuBadge>5</SidebarMenuBadge>
-            </SidebarMenuItem>
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Shortcuts
+          </SidebarGroupLabel>
+          <SidebarMenu className="px-2">
+             <SidebarMenuItem>
+                <SidebarMenuButton className="h-11 opacity-50 cursor-not-allowed">
+                  <CreditCard className="h-5 w-5" />
+                  <span>Subsciptions</span>
+                </SidebarMenuButton>
+             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="px-2 text-xs text-muted-foreground">A simple shadcn sidebar</div>
+      <SidebarFooter className="p-4">
+        <div className="rounded-xl bg-secondary/50 p-4 border border-border/50">
+          <p className="text-xs font-semibold text-foreground">FiscalFlow Pro</p>
+          <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+            Unlock advanced predictive analytics and bank sync.
+          </p>
+          <div className="mt-3 h-1 w-full bg-secondary rounded-full overflow-hidden">
+             <div className="h-full bg-emerald-500 w-1/3" />
+          </div>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
