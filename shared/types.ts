@@ -4,13 +4,13 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 export type Currency = 'INR' | 'AED' | 'USD' | 'EUR';
-export type ExpenseCategory = 
-  | 'Food' 
-  | 'Transport' 
-  | 'Shopping' 
-  | 'Bills' 
-  | 'Health' 
-  | 'Entertainment' 
+export type ExpenseCategory =
+  | 'Food'
+  | 'Transport'
+  | 'Shopping'
+  | 'Bills'
+  | 'Health'
+  | 'Entertainment'
   | 'Others';
 export interface Expense {
   id: string;
@@ -26,6 +26,7 @@ export interface UserSettings {
   monthlyBudget: number;
   carryForward: boolean;
   onboarded: boolean;
+  lastViewedMonth?: string; // YYYY-MM
 }
 export interface User {
   id: string;

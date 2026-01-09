@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
-import { Plus, Wallet, TrendingUp, CreditCard, Clock, ArrowDownCircle, Receipt } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, Wallet, TrendingUp, CreditCard, Clock, ArrowDownCircle, Receipt, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,14 @@ import { format, startOfMonth, subMonths, endOfMonth, isWithinInterval } from 'd
 import { AppLayout } from '@/components/layout/AppLayout';
 import { calculateSavings } from '@/lib/utils';
 import type { Expense, UserSettings } from '@shared/types';
+import { toast } from 'sonner';
 export function HomePage() {
   const expenses = useAppStore(s => s.expenses);
   const setExpenses = useAppStore(s => s.setExpenses);
   const settings = useAppStore(s => s.settings);
   const setSettings = useAppStore(s => s.setSettings);
   const setIsAddOpen = useAppStore(s => s.setIsAddExpenseOpen);
+  const [showMonthResetBanner, setShowMonthResetBanner] = useState(false);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -27,16 +29,38 @@ export function HomePage() {
         ]);
         setSettings(settingsData);
         setExpenses(expensesPage.items);
+        // Check for new month transition
+        const currentMonthKey = format(new Date(), 'yyyy-MM');
+        if (settingsData.onboarded && settingsData.lastViewedMonth && settingsData.lastViewedMonth !== currentMonthKey) {
+          setShowMonthResetBanner(true);
+        }
       } catch (err) {
         console.error("Dashboard failed to load", err);
       }
     };
     fetchData();
   }, [setSettings, setExpenses]);
+  const handleDismissBanner = async () => {
+    setShowMonthResetBanner(false);
+    const currentMonthKey = format(new Date(), 'yyyy-MM');
+    try {
+      const updated = await api<UserSettings>('/api/settings', {
+        method: 'POST',
+        body: JSON.stringify({ lastViewedMonth: currentMonthKey })
+      });
+      setSettings(updated);
+    } catch (e) {
+      console.error("Failed to update last viewed month", e);
+    }
+  };
   const { totalSpent, effectiveBudget, remaining, spentPercent, dailyAverage, carriedBalance, currentMonthExpenses } = useMemo(() => {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
-    const filtered = expenses.filter(e => new Date(e.date) >= currentMonthStart);
+    const currentMonthEnd = endOfMonth(now);
+    // STRICTLY current month filter for dashboard metrics
+    const filtered = expenses.filter(e => 
+      isWithinInterval(new Date(e.date), { start: currentMonthStart, end: currentMonthEnd })
+    );
     const spent = filtered.reduce((sum, e) => sum + e.amount, 0);
     const baseBudget = settings?.monthlyBudget ?? 0;
     let carried = 0;
@@ -68,6 +92,31 @@ export function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12 space-y-8">
           <OnboardingWizard />
+          <AnimatePresence>
+            {showMonthResetBanner && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden mb-6"
+              >
+                <div className="bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-200/50">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/20 p-2 rounded-xl">
+                      <Sparkles className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold">New Month Started!</h4>
+                      <p className="text-sm text-emerald-50">Your active spending dashboard has been reset for {format(new Date(), 'MMMM')}.</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={handleDismissBanner} className="text-white hover:bg-white/10">
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Financial Health</h1>
@@ -104,9 +153,9 @@ export function HomePage() {
             </div>
             <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4 border">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Recent Activity</h3>
+                <h3 className="font-semibold">Current Month Activity</h3>
                 <Button variant="ghost" size="sm" asChild className="text-xs">
-                  <Link to="/history">View All</Link>
+                  <Link to="/history">View Archive</Link>
                 </Button>
               </div>
               <div className="space-y-4">

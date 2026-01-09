@@ -33,7 +33,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const page = await ExpenseEntity.list(
         c.env,
         cq ?? null,
-        lq ? Math.max(1, (Number(lq) | 0)) : 100
+        lq ? Math.max(1, (Number(lq) | 0)) : 1000 // Higher limit for history
       );
       return ok(c, page);
     } catch (e) {
@@ -66,6 +66,16 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return ok(c, updated);
     } catch (e) {
       return bad(c, 'Failed to update expense');
+    }
+  });
+  app.delete('/api/expenses/all', async (c) => {
+    try {
+      const page = await ExpenseEntity.list(c.env, null, 1000);
+      const ids = page.items.map(i => i.id);
+      const deletedCount = await ExpenseEntity.deleteMany(c.env, ids);
+      return ok(c, { deletedCount });
+    } catch (e) {
+      return bad(c, 'Failed to clear expenses');
     }
   });
   app.delete('/api/expenses/:id', async (c) => {
