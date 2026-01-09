@@ -7,6 +7,7 @@ interface AppState {
   isLoading: boolean;
   setExpenses: (expenses: Expense[]) => void;
   addExpense: (expense: Expense) => void;
+  updateExpense: (expense: Expense) => void;
   removeExpense: (id: string) => void;
   setSettings: (settings: UserSettings) => void;
   setIsAddExpenseOpen: (isOpen: boolean) => void;
@@ -18,10 +19,14 @@ export const useAppStore = create<AppState>((set) => ({
   isAddExpenseOpen: false,
   isLoading: false,
   setExpenses: (expenses) => set({ expenses }),
-  addExpense: (expense) => set((state) => ({ 
-    expenses: [expense, ...state.expenses].sort((a, b) => 
+  addExpense: (expense) => set((state) => ({
+    expenses: [expense, ...state.expenses].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
-    ) 
+    )
+  })),
+  updateExpense: (updatedExpense) => set((state) => ({
+    expenses: state.expenses.map((e) => e.id === updatedExpense.id ? updatedExpense : e)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   })),
   removeExpense: (id) => set((state) => ({
     expenses: state.expenses.filter((e) => e.id !== id)

@@ -20,8 +20,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const cq = c.req.query('cursor');
     const lq = c.req.query('limit');
     const page = await ExpenseEntity.list(
-      c.env, 
-      cq ?? null, 
+      c.env,
+      cq ?? null,
       lq ? Math.max(1, (Number(lq) | 0)) : 100
     );
     return ok(c, page);
@@ -34,6 +34,15 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       id: crypto.randomUUID()
     });
     return ok(c, expense);
+  });
+  app.put('/api/expenses/:id', async (c) => {
+    const id = c.req.param('id');
+    const body = (await c.req.json()) as Partial<Expense>;
+    const entity = new ExpenseEntity(c.env, id);
+    if (!(await entity.exists())) return bad(c, 'Expense not found');
+    await entity.patch(body);
+    const updated = await entity.getState();
+    return ok(c, updated);
   });
   app.delete('/api/expenses/:id', async (c) => {
     const id = c.req.param('id');
