@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { UserSettingsEntity, ExpenseEntity } from "./entities";
 import { ok, bad } from './core-utils';
-import type { Expense, UserSettings } from "@shared/types";
+import type { Expense, UserSettings } from "../shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // SETTINGS
   app.get('/api/settings', async (c) => {
