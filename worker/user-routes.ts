@@ -7,7 +7,7 @@ import type { Expense, UserSettings } from "../shared/types";
  * User routes module
  * Loaded dynamically by worker/index.ts
  */
-export function userRoutes(app: Hono<{ Bindings: Env }>) {
+export const userRoutes = (app: Hono<{ Bindings: Env }>) => {
   console.log("[WORKER] Initializing user routes");
   // SETTINGS
   app.get('/api/settings', async (c) => {
