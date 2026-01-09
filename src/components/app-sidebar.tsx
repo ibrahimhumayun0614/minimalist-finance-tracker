@@ -1,10 +1,9 @@
 import React from "react";
-import { LayoutDashboard, History, Settings, PieChart, CreditCard } from "lucide-react";
+import { LayoutDashboard, History, Settings, PieChart } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarGroupLabel,
@@ -37,8 +36,8 @@ export function AppSidebar(): JSX.Element {
           <SidebarMenu className="px-2 space-y-1">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
-                <SidebarMenuButton 
-                  asChild 
+                <SidebarMenuButton
+                  asChild
                   isActive={location.pathname === item.path}
                   className="rounded-lg h-11"
                 >
@@ -51,31 +50,7 @@ export function AppSidebar(): JSX.Element {
             ))}
           </SidebarMenu>
         </SidebarGroup>
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Shortcuts
-          </SidebarGroupLabel>
-          <SidebarMenu className="px-2">
-             <SidebarMenuItem>
-                <SidebarMenuButton className="h-11 opacity-50 cursor-not-allowed">
-                  <CreditCard className="h-5 w-5" />
-                  <span>Subsciptions</span>
-                </SidebarMenuButton>
-             </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
-        <div className="rounded-xl bg-secondary/50 p-4 border border-border/50">
-          <p className="text-xs font-semibold text-foreground">FiscalFlow Pro</p>
-          <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
-            Unlock advanced predictive analytics and bank sync.
-          </p>
-          <div className="mt-3 h-1 w-full bg-secondary rounded-full overflow-hidden">
-             <div className="h-full bg-emerald-500 w-1/3" />
-          </div>
-        </div>
-      </SidebarFooter>
     </Sidebar>
   );
 }

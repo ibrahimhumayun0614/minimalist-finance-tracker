@@ -4,6 +4,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/lib/store";
 import { motion } from "framer-motion";
+import { Toaster } from "@/components/ui/sonner";
+import { AddExpenseSheet } from "@/components/expenses/AddExpenseSheet";
 type AppLayoutProps = {
   children: React.ReactNode;
   container?: boolean;
@@ -56,6 +58,8 @@ export function AppLayout({ children, container = false, className, contentClass
           </motion.div>
         </main>
       </SidebarInset>
+      <AddExpenseSheet />
+      <Toaster richColors closeButton position="top-right" />
     </SidebarProvider>
   );
 }
