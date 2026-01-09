@@ -13,6 +13,9 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     if (contentType && contentType.includes("application/json")) {
       try {
         json = (await res.json()) as ApiResponse<T>;
+        if (json.detail) {
+          console.error(`[SERVER DETAIL ${path} ${res.status}]:`, json.detail);
+        }
       } catch (parseError) {
         const text = await res.clone().text();
         console.error(`[API] JSON Parse Error at ${path}. Status: ${res.status}. Content: ${text.slice(0, 100)}`);

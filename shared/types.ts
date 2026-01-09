@@ -2,6 +2,7 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+  detail?: string;
 }
 export type Currency = 'INR' | 'AED' | 'USD' | 'EUR';
 export type ExpenseCategory =
