@@ -9,13 +9,7 @@ import type { Expense, UserSettings } from "@shared/types";
  */
 export const userRoutes = (app: Hono<{ Bindings: Env }>) => {
   console.log("[WORKER] Initializing user routes");
-  let routesAdded = false;
   try {
-    if (routesAdded) {
-      console.log("[WORKER] Routes already added (skipping)");
-      return;
-    }
-    routesAdded = true;
 
     // SETTINGS
     app.get('/api/settings', async (c) => {
@@ -115,7 +109,7 @@ export const userRoutes = (app: Hono<{ Bindings: Env }>) => {
       }
     });
   } catch (e: any) {
-    if (e.message?.includes('matcher already built')) {
+    if (e.message?.includes('matcher is already built')) {
       console.log('[WORKER] Routes already added (skipping)');
       return;
     }
