@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAppStore } from '@/lib/store';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Save, Wallet, ShieldCheck, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Save, Wallet, ShieldCheck, Trash2, RotateCcw, AlertTriangle, ArrowRightCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,12 +29,14 @@ export function SettingsPage() {
   const [budget, setBudget] = useState('');
   const [currency, setCurrency] = useState<Currency>('USD');
   const [carryForward, setCarryForward] = useState(false);
+  const [manualCarry, setManualCarry] = useState('');
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (settings) {
       setBudget(settings.monthlyBudget.toString());
       setCurrency(settings.currency);
       setCarryForward(settings.carryForward);
+      setManualCarry((settings.manualCarryForward ?? 0).toString());
     }
   }, [settings]);
   const handleSave = async () => {
@@ -43,7 +45,8 @@ export function SettingsPage() {
       const updated: Partial<UserSettings> = {
         monthlyBudget: Number(budget) || 0,
         currency,
-        carryForward
+        carryForward,
+        manualCarryForward: Number(manualCarry) || 0
       };
       const result = await api<UserSettings>('/api/settings', {
         method: 'POST',
@@ -130,13 +133,32 @@ export function SettingsPage() {
                 </CardTitle>
                 <CardDescription>Logical rules for budget calculation.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border">
                   <div className="space-y-1">
                     <Label className="text-base font-semibold">Carry Forward Balance</Label>
                     <p className="text-xs text-muted-foreground">Unspent funds move to next month.</p>
                   </div>
                   <Switch checked={carryForward} onCheckedChange={setCarryForward} />
+                </div>
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    <ArrowRightCircle className="h-4 w-4 text-primary" />
+                    <Label className="font-semibold">Manual Carry Forward Override</Label>
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      type="number"
+                      value={manualCarry}
+                      onChange={e => setManualCarry(e.target.value)}
+                      className="bg-secondary border-none"
+                      placeholder="Enter override value..."
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      Setting this to non-zero will ignore the automatic calculation for the current month. 
+                      Set to 0 to resume automatic tracking based on previous month's spending.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

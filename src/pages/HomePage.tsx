@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Wallet, TrendingUp, CreditCard, Clock, ArrowDownCircle, Receipt, X, Sparkles } from 'lucide-react';
-
+import { Plus, Wallet, TrendingUp, CreditCard, Clock, ArrowDownCircle, Receipt, X, Sparkles, Edit2, Check, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MetricsCard } from '@/components/ui/extension/metrics-card';
@@ -11,6 +10,8 @@ import { api } from '@/lib/api-client';
 import { format, startOfMonth, subMonths, endOfMonth, isWithinInterval } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { calculateSavings } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import type { Expense, UserSettings } from '@shared/types';
 export function HomePage() {
   const expenses = useAppStore(s => s.expenses);
@@ -19,6 +20,8 @@ export function HomePage() {
   const setSettings = useAppStore(s => s.setSettings);
   const setIsAddOpen = useAppStore(s => s.setIsAddExpenseOpen);
   const [showMonthResetBanner, setShowMonthResetBanner] = useState(false);
+  const [isEditingCarry, setIsEditingCarry] = useState(false);
+  const [manualValue, setManualValue] = useState('');
   useEffect(() => {
     let mounted = true;
     const fetchData = async () => {
@@ -54,6 +57,24 @@ export function HomePage() {
       console.error("Failed to update last viewed month", e);
     }
   };
+  const handleUpdateManualCarry = async () => {
+    const val = Number(manualValue);
+    if (isNaN(val)) {
+      toast.error("Invalid amount");
+      return;
+    }
+    try {
+      const updated = await api<UserSettings>('/api/settings', {
+        method: 'POST',
+        body: JSON.stringify({ manualCarryForward: val })
+      });
+      setSettings(updated);
+      setIsEditingCarry(false);
+      toast.success("Carry forward adjusted");
+    } catch (e) {
+      toast.error("Failed to save adjustment");
+    }
+  };
   const metrics = useMemo(() => {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
@@ -68,20 +89,21 @@ export function HomePage() {
     });
     const spent = filtered.reduce((sum, e) => sum + (e.amount || 0), 0);
     const baseBudget = settings?.monthlyBudget ?? 0;
-    let carried = 0;
-    if (settings?.carryForward) {
-      const prevMonthStart = startOfMonth(subMonths(now, 1));
-      const prevMonthEnd = endOfMonth(subMonths(now, 1));
-      const prevMonthExpenses = safeExpenses.filter(e => {
-        try {
-          return isWithinInterval(new Date(e.date), { start: prevMonthStart, end: prevMonthEnd });
-        } catch {
-          return false;
-        }
-      });
-      carried = calculateSavings(prevMonthExpenses, baseBudget);
-    }
-    const effective = baseBudget + carried;
+    let autoCarried = 0;
+    const prevMonthStart = startOfMonth(subMonths(now, 1));
+    const prevMonthEnd = endOfMonth(subMonths(now, 1));
+    const prevMonthExpenses = safeExpenses.filter(e => {
+      try {
+        return isWithinInterval(new Date(e.date), { start: prevMonthStart, end: prevMonthEnd });
+      } catch {
+        return false;
+      }
+    });
+    autoCarried = calculateSavings(prevMonthExpenses, baseBudget);
+    const manualOverride = settings?.manualCarryForward ?? 0;
+    const carriedBalance = manualOverride !== 0 ? manualOverride : autoCarried;
+    const isOverridden = manualOverride !== 0;
+    const effective = baseBudget + carriedBalance;
     const rem = Math.max(0, effective - spent);
     const pct = effective > 0 ? Math.round((spent / effective) * 100) : 0;
     const dayOfMonth = Number(format(now, 'dd'));
@@ -92,7 +114,8 @@ export function HomePage() {
       remaining: rem,
       spentPercent: pct,
       dailyAverage: avg,
-      carriedBalance: carried,
+      carriedBalance,
+      isOverridden,
       currentMonthExpenses: filtered
     };
   }, [expenses, settings]);
@@ -134,12 +157,74 @@ export function HomePage() {
             <MetricsCard title="Balance Left" value={metrics.remaining} currency={settings?.currency} icon={<TrendingUp className="h-4 w-4" />} />
             <MetricsCard title="Daily Average" value={metrics.dailyAverage} currency={settings?.currency} icon={<Clock className="h-4 w-4" />} />
           </div>
-          {settings?.carryForward && metrics.carriedBalance > 0 && (
-            <div className="flex items-center gap-3 p-4 bg-primary/5 text-primary rounded-xl border border-primary/10">
-              <ArrowDownCircle className="h-5 w-5 shrink-0" />
-              <p className="text-sm font-medium">
-                Excellent work! {settings.currency} {metrics.carriedBalance.toLocaleString()} carried forward from last month.
-              </p>
+          {settings?.carryForward && (metrics.carriedBalance > 0 || metrics.isOverridden) && (
+            <div className="flex items-center justify-between p-4 bg-primary/5 text-primary rounded-xl border border-primary/10">
+              <div className="flex items-center gap-3">
+                <ArrowDownCircle className="h-5 w-5 shrink-0" />
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">
+                    {metrics.carriedBalance > 0 
+                      ? `Excellent work! ${settings.currency} ${metrics.carriedBalance.toLocaleString()} carried forward.`
+                      : `Carry forward logic active.`
+                    }
+                    {metrics.isOverridden && (
+                      <span className="ml-2 text-[10px] uppercase font-bold px-1.5 py-0.5 bg-primary/10 rounded tracking-tighter">Manual Override Active</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              {!isEditingCarry ? (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 text-xs gap-1.5" 
+                  onClick={() => {
+                    setManualValue(metrics.carriedBalance.toString());
+                    setIsEditingCarry(true);
+                  }}
+                >
+                  <Edit2 className="h-3 w-3" /> Adjust
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="number" 
+                    value={manualValue} 
+                    onChange={e => setManualValue(e.target.value)}
+                    className="h-8 w-24 bg-background text-xs"
+                    autoFocus
+                  />
+                  <Button size="icon" className="h-8 w-8" onClick={handleUpdateManualCarry}>
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingCarry(false)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  {metrics.isOverridden && (
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="h-8 w-8 text-rose-500" 
+                      title="Reset to Auto"
+                      onClick={async () => {
+                        try {
+                          const updated = await api<UserSettings>('/api/settings', {
+                            method: 'POST',
+                            body: JSON.stringify({ manualCarryForward: 0 })
+                          });
+                          setSettings(updated);
+                          setIsEditingCarry(false);
+                          toast.success("Reset to automatic calculation");
+                        } catch (e) {
+                          toast.error("Reset failed");
+                        }
+                      }}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">

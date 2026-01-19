@@ -26,7 +26,14 @@ export function getPreviousMonthRange() {
     end: endOfMonth(prev)
   };
 }
-export function calculateSavings(expenses: { amount: number }[], budget: number) {
+/**
+ * Calculates savings for a period. 
+ * If a manual override is provided and is non-zero, it returns that value instead.
+ */
+export function calculateSavings(expenses: { amount: number }[], budget: number, manualOverride?: number) {
+  if (manualOverride && manualOverride !== 0) {
+    return manualOverride;
+  }
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
   return Math.max(0, budget - total);
 }

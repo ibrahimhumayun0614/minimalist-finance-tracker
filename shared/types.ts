@@ -28,6 +28,7 @@ export interface UserSettings {
   carryForward: boolean;
   onboarded: boolean;
   lastViewedMonth?: string; // YYYY-MM
+  manualCarryForward?: number;
 }
 export interface User {
   id: string;

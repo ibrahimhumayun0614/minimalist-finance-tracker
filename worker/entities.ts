@@ -7,7 +7,8 @@ export class UserSettingsEntity extends Entity<UserSettings> {
     currency: "INR",
     monthlyBudget: 0,
     carryForward: false,
-    onboarded: false
+    onboarded: false,
+    manualCarryForward: 0
   };
 }
 export class ExpenseEntity extends IndexedEntity<Expense> {
