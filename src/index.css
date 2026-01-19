@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,9 +45,11 @@
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    font-family: 'Roboto', sans-serif;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Roboto', sans-serif;
   }
 }
 @layer components {

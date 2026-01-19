@@ -4,8 +4,8 @@ export default {
   theme: {
   	extend: {
   		fontFamily: {
-  			sans: ['Inter', 'sans-serif'],
-			display: ['Inter', 'sans-serif'],
+  			sans: ['Roboto', 'sans-serif'],
+			display: ['Roboto', 'sans-serif'],
   			mono: ['JetBrains Mono', 'monospace']
   		},
   		borderRadius: {
