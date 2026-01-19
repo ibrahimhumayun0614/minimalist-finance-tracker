@@ -78,7 +78,7 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "bun add xlsx",
+    "bun add xlsx date-fns lucide-react zustand framer-motion clsx tailwind-merge",
     "bun add date-fns lucide-react zustand framer-motion clsx tailwind-merge"
 ];
     
