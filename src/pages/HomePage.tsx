@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Wallet, TrendingUp, CreditCard, Clock, ArrowDownCircle, Receipt, X, Sparkles, Edit2, Check, RotateCcw } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, CreditCard, Clock, Receipt, X, Sparkles, Edit2, Check, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MetricsCard } from '@/components/ui/extension/metrics-card';
@@ -89,7 +89,7 @@ export function HomePage() {
     });
     const spent = filtered.reduce((sum, e) => sum + (e.amount || 0), 0);
     const baseBudget = settings?.monthlyBudget ?? 0;
-    let autoCarried = 0;
+    // Auto carry-forward calculation
     const prevMonthStart = startOfMonth(subMonths(now, 1));
     const prevMonthEnd = endOfMonth(subMonths(now, 1));
     const prevMonthExpenses = safeExpenses.filter(e => {
@@ -99,18 +99,19 @@ export function HomePage() {
         return false;
       }
     });
-    autoCarried = calculateSavings(prevMonthExpenses, baseBudget);
+    const autoCarried = calculateSavings(prevMonthExpenses, baseBudget);
     const manualOverride = settings?.manualCarryForward ?? 0;
     const carriedBalance = manualOverride !== 0 ? manualOverride : autoCarried;
     const isOverridden = manualOverride !== 0;
-    const effective = baseBudget + carriedBalance;
-    const rem = Math.max(0, effective - spent);
-    const pct = effective > 0 ? Math.round((spent / effective) * 100) : 0;
+    // Logic change: Remaining Balance is strictly base budget minus spent
+    // ignoring carry-forward for the "Remaining" visual metric per feedback.
+    const rem = Math.max(0, baseBudget - spent);
+    const pct = baseBudget > 0 ? Math.round((spent / baseBudget) * 100) : 0;
     const dayOfMonth = Number(format(now, 'dd'));
     const avg = dayOfMonth > 0 ? Math.round(spent / dayOfMonth) : 0;
     return {
       totalSpent: spent,
-      effectiveBudget: effective,
+      baseBudget,
       remaining: rem,
       spentPercent: pct,
       dailyAverage: avg,
@@ -151,80 +152,112 @@ export function HomePage() {
               <Plus className="mr-2 h-4 w-4" /> Add Expense
             </Button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricsCard title="Effective Budget" value={metrics.effectiveBudget} currency={settings?.currency} icon={<Wallet className="h-4 w-4" />} />
-            <MetricsCard title="Total Spent" value={metrics.totalSpent} currency={settings?.currency} icon={<CreditCard className="h-4 w-4" />} trend={{ value: metrics.spentPercent, label: "of budget", isPositive: metrics.totalSpent <= metrics.effectiveBudget }} />
-            <MetricsCard title="Balance Left" value={metrics.remaining} currency={settings?.currency} icon={<TrendingUp className="h-4 w-4" />} />
-            <MetricsCard title="Daily Average" value={metrics.dailyAverage} currency={settings?.currency} icon={<Clock className="h-4 w-4" />} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <MetricsCard 
+              title="Monthly Budget" 
+              value={metrics.baseBudget} 
+              currency={settings?.currency} 
+              icon={<Wallet className="h-4 w-4" />} 
+            />
+            <MetricsCard 
+              title="Carried Balance" 
+              value={metrics.carriedBalance} 
+              currency={settings?.currency} 
+              icon={<ArrowRightLeft className="h-4 w-4" />} 
+              trend={metrics.isOverridden ? { value: 0, label: "Manual Override", isPositive: true } : undefined}
+            />
+            <MetricsCard 
+              title="Balance Left" 
+              value={metrics.remaining} 
+              currency={settings?.currency} 
+              icon={<TrendingUp className="h-4 w-4" />} 
+            />
+            <MetricsCard 
+              title="Total Spent" 
+              value={metrics.totalSpent} 
+              currency={settings?.currency} 
+              icon={<CreditCard className="h-4 w-4" />} 
+              trend={{ value: metrics.spentPercent, label: "of budget", isPositive: metrics.totalSpent <= metrics.baseBudget }} 
+            />
+            <MetricsCard 
+              title="Daily Average" 
+              value={metrics.dailyAverage} 
+              currency={settings?.currency} 
+              icon={<Clock className="h-4 w-4" />} 
+            />
           </div>
           {settings?.carryForward && (metrics.carriedBalance > 0 || metrics.isOverridden) && (
-            <div className="flex items-center justify-between p-4 bg-primary/5 text-primary rounded-xl border border-primary/10">
+            <div className="flex flex-wrap items-center justify-between p-4 bg-primary/5 text-primary rounded-xl border border-primary/10 gap-4">
               <div className="flex items-center gap-3">
-                <ArrowDownCircle className="h-5 w-5 shrink-0" />
+                <div className="bg-primary/10 p-2 rounded-full hidden sm:block">
+                  <RotateCcw className="h-5 w-5" />
+                </div>
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">
-                    {metrics.carriedBalance > 0 
-                      ? `Excellent work! ${settings.currency} ${metrics.carriedBalance.toLocaleString()} carried forward.`
-                      : `Carry forward logic active.`
+                    {metrics.carriedBalance > 0
+                      ? `Saving surplus: ${settings.currency} ${metrics.carriedBalance.toLocaleString()} available from last month.`
+                      : `Carry forward logic is enabled.`
                     }
                     {metrics.isOverridden && (
-                      <span className="ml-2 text-[10px] uppercase font-bold px-1.5 py-0.5 bg-primary/10 rounded tracking-tighter">Manual Override Active</span>
+                      <span className="ml-2 text-[10px] uppercase font-bold px-1.5 py-0.5 bg-primary/10 rounded tracking-tighter">Manual Active</span>
                     )}
                   </p>
                 </div>
               </div>
-              {!isEditingCarry ? (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-xs gap-1.5" 
-                  onClick={() => {
-                    setManualValue(metrics.carriedBalance.toString());
-                    setIsEditingCarry(true);
-                  }}
-                >
-                  <Edit2 className="h-3 w-3" /> Adjust
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Input 
-                    type="number" 
-                    value={manualValue} 
-                    onChange={e => setManualValue(e.target.value)}
-                    className="h-8 w-24 bg-background text-xs"
-                    autoFocus
-                  />
-                  <Button size="icon" className="h-8 w-8" onClick={handleUpdateManualCarry}>
-                    <Check className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2">
+                {!isEditingCarry ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => {
+                      setManualValue(metrics.carriedBalance.toString());
+                      setIsEditingCarry(true);
+                    }}
+                  >
+                    <Edit2 className="h-3 w-3" /> Adjust
                   </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingCarry(false)}>
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                  {metrics.isOverridden && (
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      className="h-8 w-8 text-rose-500" 
-                      title="Reset to Auto"
-                      onClick={async () => {
-                        try {
-                          const updated = await api<UserSettings>('/api/settings', {
-                            method: 'POST',
-                            body: JSON.stringify({ manualCarryForward: 0 })
-                          });
-                          setSettings(updated);
-                          setIsEditingCarry(false);
-                          toast.success("Reset to automatic calculation");
-                        } catch (e) {
-                          toast.error("Reset failed");
-                        }
-                      }}
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={manualValue}
+                      onChange={e => setManualValue(e.target.value)}
+                      className="h-8 w-24 bg-background text-xs"
+                      autoFocus
+                    />
+                    <Button size="icon" className="h-8 w-8" onClick={handleUpdateManualCarry}>
+                      <Check className="h-3.5 w-3.5" />
                     </Button>
-                  )}
-                </div>
-              )}
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingCarry(false)}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                    {metrics.isOverridden && (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 text-rose-500"
+                        title="Reset to Auto"
+                        onClick={async () => {
+                          try {
+                            const updated = await api<UserSettings>('/api/settings', {
+                              method: 'POST',
+                              body: JSON.stringify({ manualCarryForward: 0 })
+                            });
+                            setSettings(updated);
+                            setIsEditingCarry(false);
+                            toast.success("Reset to automatic calculation");
+                          } catch (e) {
+                            toast.error("Reset failed");
+                          }
+                        }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -233,9 +266,9 @@ export function HomePage() {
             </div>
             <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4 border">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Current Month Activity</h3>
+                <h3 className="font-semibold">Recent Activity</h3>
                 <Button variant="ghost" size="sm" asChild className="text-xs">
-                  <Link to="/history">View Archive</Link>
+                  <Link to="/history">Full Archive</Link>
                 </Button>
               </div>
               <div className="space-y-4">

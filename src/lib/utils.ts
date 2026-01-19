@@ -27,14 +27,15 @@ export function getPreviousMonthRange() {
   };
 }
 /**
- * Calculates savings for a period. 
- * If a manual override is provided and is non-zero, it returns that value instead.
+ * Calculates savings for a period.
+ * Returns the positive difference between budget and actual spending.
+ * If spending exceeds budget, it returns 0 (no carry-forward deficit).
  */
 export function calculateSavings(expenses: { amount: number }[], budget: number, manualOverride?: number) {
-  if (manualOverride && manualOverride !== 0) {
+  if (manualOverride !== undefined && manualOverride !== 0) {
     return manualOverride;
   }
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const total = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   return Math.max(0, budget - total);
 }
 /**
@@ -44,10 +45,14 @@ export function calculateSavings(expenses: { amount: number }[], budget: number,
 export function getAvailableMonths(expenses: { date: string }[]): string[] {
   const months = new Set<string>();
   expenses.forEach(e => {
-    const monthKey = format(new Date(e.date), 'yyyy-MM');
-    months.add(monthKey);
+    try {
+      const monthKey = format(new Date(e.date), 'yyyy-MM');
+      months.add(monthKey);
+    } catch {
+      // Ignore invalid dates
+    }
   });
-  // Also ensure current month is always available even if empty
+  // Ensure current month is always available
   months.add(format(new Date(), 'yyyy-MM'));
   return Array.from(months).sort((a, b) => b.localeCompare(a));
 }
