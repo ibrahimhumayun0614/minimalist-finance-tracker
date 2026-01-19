@@ -5,10 +5,16 @@ import { ok, bad } from './core-utils';
 import type { Expense, UserSettings } from "@shared/types";
 /**
  * Minimalist Personal Finance Tracker - User Routes
- * Handles Settings and Expense persistence
+ * Using a module-level flag to ensure routes are only registered once
+ * preventing Hono "matcher already built" runtime errors.
  */
+let initialized = false;
 export const userRoutes = (app: Hono<{ Bindings: Env }>) => {
-  console.log("[WORKER] Initializing tracker routes...");
+  if (initialized) {
+    console.log("[WORKER] Routes already initialized, skipping...");
+    return;
+  }
+  console.log("[WORKER] Initializing tracker routes for the first time...");
   // SETTINGS API
   app.get('/api/settings', async (c) => {
     try {
@@ -96,4 +102,5 @@ export const userRoutes = (app: Hono<{ Bindings: Env }>) => {
       return bad(c, 'Failed to delete expense record');
     }
   });
+  initialized = true;
 };

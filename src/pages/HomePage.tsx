@@ -22,16 +22,18 @@ export function HomePage() {
   const [showMonthResetBanner, setShowMonthResetBanner] = useState(false);
   const [isEditingCarry, setIsEditingCarry] = useState(false);
   const [manualValue, setManualValue] = useState('');
+  const [isInitializing, setIsInitializing] = useState(true);
   useEffect(() => {
     let mounted = true;
     const fetchData = async () => {
       try {
-        const [settingsData, expensesPage] = await Promise.all([
-          api<UserSettings>('/api/settings'),
-          api<{ items: Expense[] }>('/api/expenses')
-        ]);
+        // Sequential fetch to ensure worker route initialization isn't hammered by concurrent requests
+        // while the router is being built on the backend.
+        const settingsData = await api<UserSettings>('/api/settings');
         if (!mounted) return;
         setSettings(settingsData);
+        const expensesPage = await api<{ items: Expense[] }>('/api/expenses');
+        if (!mounted) return;
         setExpenses(expensesPage.items ?? []);
         const currentMonthKey = format(new Date(), 'yyyy-MM');
         if (settingsData.onboarded && settingsData.lastViewedMonth && settingsData.lastViewedMonth !== currentMonthKey) {
@@ -39,6 +41,9 @@ export function HomePage() {
         }
       } catch (err) {
         console.error("Dashboard failed to load", err instanceof Error ? err.message : err);
+        toast.error("Connectivity issue. Retrying...");
+      } finally {
+        if (mounted) setIsInitializing(false);
       }
     };
     fetchData();
@@ -120,6 +125,18 @@ export function HomePage() {
       currency
     };
   }, [expenses, settings]);
+  if (isInitializing && !settings) {
+    return (
+      <AppLayout title="Financial Dashboard">
+        <div className="flex h-full items-center justify-center py-24">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-sm font-medium text-muted-foreground">Initializing FiscalFlow...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
   return (
     <AppLayout title="Financial Dashboard">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -206,9 +223,9 @@ export function HomePage() {
               </div>
               <div className="flex items-center gap-2">
                 {!isEditingCarry ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
                     className="h-9 text-xs gap-1.5 hover:bg-primary/10"
                     onClick={() => {
                       setManualValue(metrics.carriedBalance.toString());
@@ -219,9 +236,9 @@ export function HomePage() {
                   </Button>
                 ) : (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                    <Input
-                      type="number"
-                      value={manualValue}
+                    <Input 
+                      type="number" 
+                      value={manualValue} 
                       onChange={e => setManualValue(e.target.value)}
                       className="h-9 w-28 bg-background text-sm font-medium"
                       autoFocus
