@@ -70,7 +70,7 @@ export function HomePage() {
       });
       setSettings(updated);
       setIsEditingCarry(false);
-      toast.success("Manual balance override updated");
+      toast.success("Balance adjustment saved");
     } catch (e) {
       toast.error("Failed to save adjustment");
     }
@@ -90,8 +90,7 @@ export function HomePage() {
     });
     const spent = filtered.reduce((sum, e) => sum + (e.amount || 0), 0);
     const baseBudget = settings?.monthlyBudget ?? 0;
-    const currency = settings?.currency ?? '$';
-    // Auto carry-forward calculation
+    const currency = settings?.currency ?? 'USD';
     const prevMonthStart = startOfMonth(subMonths(now, 1));
     const prevMonthEnd = endOfMonth(subMonths(now, 1));
     const prevMonthExpenses = safeExpenses.filter(e => {
@@ -105,7 +104,6 @@ export function HomePage() {
     const manualOverride = settings?.manualCarryForward ?? 0;
     const carriedBalance = manualOverride !== 0 ? manualOverride : autoCarried;
     const isOverridden = manualOverride !== 0;
-    // Logic: Remaining is strictly base budget minus spent for the current period
     const rem = Math.max(0, baseBudget - spent);
     const pct = baseBudget > 0 ? Math.round((spent / baseBudget) * 100) : 0;
     const dayOfMonth = now.getDate();
@@ -123,7 +121,7 @@ export function HomePage() {
     };
   }, [expenses, settings]);
   return (
-    <AppLayout title="Overview">
+    <AppLayout title="Financial Dashboard">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12 space-y-8">
           <OnboardingWizard />
@@ -135,8 +133,8 @@ export function HomePage() {
                     <Sparkles className="h-6 w-6" />
                   </div>
                   <div>
-                    <h4 className="font-bold">New Month, Fresh Start</h4>
-                    <p className="text-sm text-emerald-50">Spending reset for {format(new Date(), 'MMMM')}. Check your carried balance below.</p>
+                    <h4 className="font-bold">Fresh Monthly Start</h4>
+                    <p className="text-sm text-emerald-50">Expenses reset for {format(new Date(), 'MMMM')}. Check your carried balance below.</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleDismissBanner} className="text-white hover:bg-white/10 shrink-0">
@@ -147,8 +145,8 @@ export function HomePage() {
           )}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground">Snapshot for {format(new Date(), 'MMMM yyyy')}</p>
+              <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
+              <p className="text-muted-foreground">{format(new Date(), 'MMMM yyyy')} Snapshot</p>
             </div>
             <Button onClick={() => setIsAddOpen(true)} className="btn-gradient px-6">
               <Plus className="mr-2 h-4 w-4" /> Add Expense
@@ -156,7 +154,7 @@ export function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
             <MetricsCard
-              title="Base Budget"
+              title="Target Budget"
               value={metrics.baseBudget}
               currency={metrics.currency}
               icon={<Wallet className="h-4 w-4" />}
@@ -166,7 +164,7 @@ export function HomePage() {
               value={metrics.carriedBalance}
               currency={metrics.currency}
               icon={<ArrowRightLeft className="h-4 w-4" />}
-              trend={metrics.isOverridden ? { value: 0, label: "Manual Override", isPositive: true } : undefined}
+              trend={metrics.isOverridden ? { value: 0, label: "Adjusted", isPositive: true } : undefined}
             />
             <MetricsCard
               title="Budget Left"
@@ -182,7 +180,7 @@ export function HomePage() {
               trend={{ value: metrics.spentPercent, label: "used", isPositive: metrics.totalSpent <= metrics.baseBudget }}
             />
             <MetricsCard
-              title="Daily Avg"
+              title="Daily Average"
               value={metrics.dailyAverage}
               currency={metrics.currency}
               icon={<Clock className="h-4 w-4" />}
@@ -197,11 +195,11 @@ export function HomePage() {
                 <div>
                   <p className="text-sm font-medium">
                     {metrics.carriedBalance > 0
-                      ? `Surplus detected: ${metrics.currency} ${metrics.carriedBalance.toLocaleString()} available from last period.`
-                      : `Carry forward logic is enabled for your account.`
+                      ? `Available savings: ${metrics.currency} ${metrics.carriedBalance.toLocaleString()} carried forward.`
+                      : `Carry-forward logic is active.`
                     }
                     {metrics.isOverridden && (
-                      <span className="ml-2 inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight">Override Active</span>
+                      <span className="ml-2 inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight">Manual Override</span>
                     )}
                   </p>
                 </div>
@@ -239,7 +237,7 @@ export function HomePage() {
                         size="icon"
                         variant="outline"
                         className="h-9 w-9 text-rose-500 border-rose-200 hover:bg-rose-50"
-                        title="Revert to automatic calculation"
+                        title="Revert to auto-calculate"
                         onClick={async () => {
                           try {
                             const updated = await api<UserSettings>('/api/settings', {
@@ -248,7 +246,7 @@ export function HomePage() {
                             });
                             setSettings(updated);
                             setIsEditingCarry(false);
-                            toast.success("Resumed automatic balance calculation");
+                            toast.success("Resumed automatic tracking");
                           } catch (e) {
                             toast.error("Revert failed");
                           }
@@ -270,7 +268,7 @@ export function HomePage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg tracking-tight">Recent Activity</h3>
                 <Button variant="ghost" size="sm" asChild className="text-xs font-bold text-primary">
-                  <Link to="/history">View All</Link>
+                  <Link to="/history">View History</Link>
                 </Button>
               </div>
               <div className="space-y-4">
@@ -279,8 +277,8 @@ export function HomePage() {
                     <div className="p-4 bg-secondary rounded-2xl mb-4 opacity-40">
                       <Receipt className="h-10 w-10" />
                     </div>
-                    <p className="text-sm font-semibold">No activity recorded yet</p>
-                    <p className="text-xs opacity-70">Start by adding your first expense</p>
+                    <p className="text-sm font-semibold">No recent transactions</p>
+                    <p className="text-xs opacity-70">Add an expense to get started</p>
                   </div>
                 ) : (
                   <div className="space-y-3">

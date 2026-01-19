@@ -18,7 +18,6 @@ export function AppLayout({ children, container = false, className, contentClass
   const setIsAddOpen = useAppStore(s => s.setIsAddExpenseOpen);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Robust cross-browser detection for Cmd/Ctrl + K
       const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
       const modifier = isMac ? e.metaKey : e.ctrlKey;
       if (modifier && (e.key === 'k' || e.key === 'K')) {
@@ -32,23 +31,23 @@ export function AppLayout({ children, container = false, className, contentClass
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className={cn("bg-background transition-colors duration-300", className)}>
+      <SidebarInset className={cn("bg-background", className)}>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-xl sticky top-0 z-30 bg-background/70 border-border/50">
           <SidebarTrigger className="-ml-1 text-foreground/70 hover:text-foreground hover:bg-accent" />
           <Separator orientation="vertical" className="mr-2 h-4 opacity-50" />
           <div className="flex-1">
              {title && (
-               <motion.h2 
-                 initial={{ opacity: 0, x: -10 }} 
-                 animate={{ opacity: 1, x: 0 }} 
-                 className="text-sm font-bold tracking-tight text-foreground/90 uppercase"
+               <motion.h2
+                 initial={{ opacity: 0, x: -10 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 className="text-xs font-bold tracking-tight text-foreground/90 uppercase"
                >
                  {title}
                </motion.h2>
              )}
           </div>
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setIsAddOpen(true)}
               className="hidden md:flex items-center gap-2 text-[10px] font-bold text-muted-foreground/80 hover:text-primary bg-secondary/80 hover:bg-secondary px-3 py-1.5 rounded-lg border border-border/50 transition-all active:scale-95"
             >
@@ -65,7 +64,7 @@ export function AppLayout({ children, container = false, className, contentClass
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              transition={{ duration: 0.2 }}
               className="h-full"
             >
               {container ? (
@@ -80,9 +79,9 @@ export function AppLayout({ children, container = false, className, contentClass
         </main>
       </SidebarInset>
       <AddExpenseSheet />
-      <Toaster 
-        richColors 
-        closeButton 
+      <Toaster
+        richColors
+        closeButton
         position="top-right"
         toastOptions={{
           style: {

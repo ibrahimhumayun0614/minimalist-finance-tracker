@@ -25,7 +25,7 @@ export function AppSidebar(): JSX.Element {
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-200 shadow-lg flex items-center justify-center">
             <PieChart className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-bold tracking-tight">FiscalFlow</span>
+          <span className="text-sm font-bold tracking-tight leading-tight">Minimalist Finance</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

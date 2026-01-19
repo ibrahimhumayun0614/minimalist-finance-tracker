@@ -16,7 +16,7 @@ export function formatCurrency(amount: number, currency: string = 'USD') {
 export function exportToExcel(data: any[], filename: string) {
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
   XLSX.writeFile(workbook, `${filename}.xlsx`);
 }
 export function getPreviousMonthRange() {
@@ -29,7 +29,7 @@ export function getPreviousMonthRange() {
 /**
  * Calculates savings for a period.
  * Returns the positive difference between budget and actual spending.
- * If spending exceeds budget, it returns 0 (no carry-forward deficit).
+ * If spending exceeds budget, it returns 0.
  */
 export function calculateSavings(expenses: { amount: number }[], budget: number, manualOverride?: number) {
   if (manualOverride !== undefined && manualOverride !== 0) {
@@ -46,8 +46,11 @@ export function getAvailableMonths(expenses: { date: string }[]): string[] {
   const months = new Set<string>();
   expenses.forEach(e => {
     try {
-      const monthKey = format(new Date(e.date), 'yyyy-MM');
-      months.add(monthKey);
+      const d = new Date(e.date);
+      if (!isNaN(d.getTime())) {
+        const monthKey = format(d, 'yyyy-MM');
+        months.add(monthKey);
+      }
     } catch {
       // Ignore invalid dates
     }
