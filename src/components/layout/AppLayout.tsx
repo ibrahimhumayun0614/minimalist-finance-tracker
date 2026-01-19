@@ -3,9 +3,10 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/lib/store";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/sonner";
 import { AddExpenseSheet } from "@/components/expenses/AddExpenseSheet";
+import { cn } from "@/lib/utils";
 type AppLayoutProps = {
   children: React.ReactNode;
   container?: boolean;
@@ -17,7 +18,10 @@ export function AppLayout({ children, container = false, className, contentClass
   const setIsAddOpen = useAppStore(s => s.setIsAddExpenseOpen);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      // Robust cross-browser detection for Cmd/Ctrl + K
+      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+      if (modifier && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setIsAddOpen(true);
       }
@@ -28,40 +32,67 @@ export function AppLayout({ children, container = false, className, contentClass
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className={className}>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-md sticky top-0 z-20 bg-background/80">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
+      <SidebarInset className={cn("bg-background transition-colors duration-300", className)}>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-xl sticky top-0 z-30 bg-background/70 border-border/50">
+          <SidebarTrigger className="-ml-1 text-foreground/70 hover:text-foreground hover:bg-accent" />
+          <Separator orientation="vertical" className="mr-2 h-4 opacity-50" />
           <div className="flex-1">
-             {title && <h2 className="text-sm font-semibold tracking-tight">{title}</h2>}
+             {title && (
+               <motion.h2 
+                 initial={{ opacity: 0, x: -10 }} 
+                 animate={{ opacity: 1, x: 0 }} 
+                 className="text-sm font-bold tracking-tight text-foreground/90 uppercase"
+               >
+                 {title}
+               </motion.h2>
+             )}
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground bg-secondary px-2 py-1 rounded border">
-              <kbd className="font-sans">⌘</kbd>
-              <kbd className="font-sans">K</kbd>
-              <span>Quick Add</span>
-            </div>
+            <button 
+              onClick={() => setIsAddOpen(true)}
+              className="hidden md:flex items-center gap-2 text-[10px] font-bold text-muted-foreground/80 hover:text-primary bg-secondary/80 hover:bg-secondary px-3 py-1.5 rounded-lg border border-border/50 transition-all active:scale-95"
+            >
+              <kbd className="font-sans opacity-70">⌘</kbd>
+              <kbd className="font-sans opacity-70">K</kbd>
+              <span className="uppercase tracking-widest ml-1">Quick Add</span>
+            </button>
           </div>
         </header>
-        <main className="flex-1 overflow-x-hidden">
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="h-full"
-          >
-            {container ? (
-              <div className={"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12" + (contentClassName ? ` ${contentClassName}` : "")}>
-                {children}
-              </div>
-            ) : (
-              children
-            )}
-          </motion.div>
+        <main className="flex-1 min-h-[calc(100vh-4rem)]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={window.location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="h-full"
+            >
+              {container ? (
+                <div className={cn("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12", contentClassName)}>
+                  {children}
+                </div>
+              ) : (
+                children
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </SidebarInset>
       <AddExpenseSheet />
-      <Toaster richColors closeButton position="top-right" />
+      <Toaster 
+        richColors 
+        closeButton 
+        position="top-right"
+        toastOptions={{
+          style: {
+            borderRadius: '12px',
+            border: '1px solid hsl(var(--border))',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))',
+          },
+        }}
+      />
     </SidebarProvider>
   );
 }

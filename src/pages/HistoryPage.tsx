@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Download, Trash2, Filter, Edit2, Plus, Calendar } from 'lucide-react';
+import { Search, Download, Trash2, Filter, Edit2, Plus, Calendar, AlertCircle } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAppStore } from '@/lib/store';
 import { format, isWithinInterval, startOfMonth, endOfMonth, parse, isValid } from 'date-fns';
@@ -26,8 +26,10 @@ export function HistoryPage() {
   const filteredExpenses = useMemo(() => {
     const safeExpenses = expenses ?? [];
     return safeExpenses.filter(e => {
-      const matchesSearch = (e.description || "").toLowerCase().includes(search.toLowerCase()) ||
-                           (e.category || "").toLowerCase().includes(search.toLowerCase());
+      const desc = e.description || "";
+      const cat = e.category || "";
+      const matchesSearch = desc.toLowerCase().includes(search.toLowerCase()) ||
+                           cat.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = category === 'All' || e.category === category;
       let matchesMonth = true;
       if (selectedMonth !== 'All') {
@@ -50,62 +52,67 @@ export function HistoryPage() {
     return filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [filteredExpenses]);
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this expense?")) return;
+    if (!window.confirm("Permanent deletion cannot be undone. Confirm?")) return;
     try {
       await api(`/api/expenses/${id}`, { method: 'DELETE' });
       removeExpense(id);
-      toast.success("Expense deleted");
+      toast.success("Transaction removed from archives");
     } catch (err) {
-      toast.error("Failed to delete expense");
+      toast.error("Deletion failed");
     }
   };
   const handleExport = () => {
+    if (filteredExpenses.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
     const data = filteredExpenses.map(e => ({
       Date: format(new Date(e.date), 'yyyy-MM-dd HH:mm'),
       Description: e.description || e.category,
       Category: e.category,
       Amount: e.amount,
-      Currency: e.currency
+      Currency: settings?.currency || 'USD'
     }));
-    exportToExcel(data, `fiscal_flow_expenses_${selectedMonth}_${format(new Date(), 'yyyy_MM_dd')}`);
+    exportToExcel(data, `fiscal_flow_report_${selectedMonth}_${format(new Date(), 'yyyy_MM_dd')}`);
+    toast.success("Excel report generated");
   };
   return (
-    <AppLayout title="Transaction History">
+    <AppLayout title="Financial Archives">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Archives</h1>
-              <p className="text-muted-foreground">Historical records and period summaries.</p>
+              <p className="text-muted-foreground mt-1">Audit and filter your historical spending patterns.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
-                <Download className="h-4 w-4" /> Export
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={handleExport} className="gap-2 border-border shadow-sm hover:bg-secondary">
+                <Download className="h-4 w-4" /> Export Excel
               </Button>
               <Button onClick={() => setIsAddOpen(true)} className="btn-gradient">
-                <Plus className="h-4 w-4 mr-2" /> Add New
+                <Plus className="h-4 w-4 mr-2" /> New Entry
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-card p-4 rounded-xl shadow-soft border">
-            <div className="relative">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-card p-5 rounded-2xl shadow-soft border border-border/60">
+            <div className="relative lg:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search transactions..."
+                placeholder="Find transactions by description or category..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-secondary border-none"
+                className="pl-9 bg-secondary border-none h-10 focus-visible:ring-primary/20"
               />
             </div>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="bg-secondary border-none">
+              <SelectTrigger className="bg-secondary border-none h-10">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <SelectValue placeholder="All Time" />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All History</SelectItem>
+                <SelectItem value="All">All Periods</SelectItem>
                 {availableMonths.map(month => {
                   const d = parse(month, 'yyyy-MM', new Date());
                   return (
@@ -117,7 +124,7 @@ export function HistoryPage() {
               </SelectContent>
             </Select>
             <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory | 'All')}>
-              <SelectTrigger className="bg-secondary border-none">
+              <SelectTrigger className="bg-secondary border-none h-10">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -127,63 +134,69 @@ export function HistoryPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="bg-card rounded-xl shadow-soft overflow-hidden border">
-            <Table>
-              <TableHeader className="bg-secondary/50">
-                <TableRow>
-                  <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="hidden md:table-cell">Category</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-[100px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExpenses.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
-                       No transactions found matching your filters.
-                    </TableCell>
+          <div className="bg-card rounded-2xl shadow-soft overflow-hidden border border-border/60">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-secondary/40">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[140px] font-bold text-foreground/80 uppercase tracking-widest text-[10px]">Date</TableHead>
+                    <TableHead className="font-bold text-foreground/80 uppercase tracking-widest text-[10px]">Description</TableHead>
+                    <TableHead className="hidden md:table-cell font-bold text-foreground/80 uppercase tracking-widest text-[10px]">Category</TableHead>
+                    <TableHead className="text-right font-bold text-foreground/80 uppercase tracking-widest text-[10px]">Amount</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
-                ) : (
-                  filteredExpenses.map((expense) => (
-                    <TableRow key={expense.id} className="hover:bg-accent/30 transition-colors">
-                      <TableCell className="text-xs text-muted-foreground font-medium">
-                        {format(new Date(expense.date), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {expense.description || <span className="text-muted-foreground italic font-normal">No description</span>}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary text-primary border">
-                          {expense.category}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-bold">
-                        {settings?.currency} {expense.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 justify-end">
-                          <Button variant="ghost" size="icon" onClick={() => setEditingExpense(expense)}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-rose-500" onClick={() => handleDelete(expense.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                </TableHeader>
+                <TableBody>
+                  {filteredExpenses.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-64 text-center">
+                        <div className="flex flex-col items-center justify-center text-muted-foreground opacity-50">
+                          <AlertCircle className="h-10 w-10 mb-2" />
+                          <p className="font-medium">No results match your criteria</p>
+                          <p className="text-xs">Try adjusting your search or filters</p>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            <div className="p-4 bg-secondary/30 border-t flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">
-                Showing {filteredExpenses.length} transactions
+                  ) : (
+                    filteredExpenses.map((expense) => (
+                      <TableRow key={expense.id} className="hover:bg-accent/30 transition-colors group">
+                        <TableCell className="text-xs font-semibold text-muted-foreground">
+                          {format(new Date(expense.date), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell className="font-bold text-foreground/90">
+                          {expense.description || <span className="text-muted-foreground/40 italic font-normal text-xs uppercase tracking-tighter">Untitled Entry</span>}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-secondary text-primary border border-border/40">
+                            {expense.category}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-rose-500">
+                          {settings?.currency || '$'} {expense.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingExpense(expense)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(expense.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="p-5 bg-secondary/20 border-t flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+              <span className="text-muted-foreground font-medium">
+                Showing {filteredExpenses.length} transactions in this view
               </span>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Period Total:</span>
-                <span className="font-bold text-lg">{settings?.currency} {totalFiltered.toLocaleString()}</span>
+              <div className="flex items-center gap-4 bg-background px-4 py-2 rounded-xl border border-border/50 shadow-sm">
+                <span className="text-muted-foreground text-xs uppercase tracking-widest font-bold">Total for Period:</span>
+                <span className="font-black text-xl text-primary">{settings?.currency || '$'} {totalFiltered.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
