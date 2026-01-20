@@ -27,8 +27,6 @@ export function HomePage() {
     let mounted = true;
     const fetchData = async () => {
       try {
-        // Sequential fetch to ensure worker route initialization isn't hammered by concurrent requests
-        // while the router is being built on the backend.
         const settingsData = await api<UserSettings>('/api/settings');
         if (!mounted) return;
         setSettings(settingsData);
@@ -131,7 +129,7 @@ export function HomePage() {
         <div className="flex h-full items-center justify-center py-24">
           <div className="flex flex-col items-center gap-4">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-sm font-medium text-muted-foreground">Initializing FiscalFlow...</p>
+            <p className="text-sm font-medium text-muted-foreground animate-pulse">Initializing Minimalist Finance...</p>
           </div>
         </div>
       </AppLayout>
@@ -165,7 +163,7 @@ export function HomePage() {
               <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
               <p className="text-muted-foreground">{format(new Date(), 'MMMM yyyy')} Snapshot</p>
             </div>
-            <Button onClick={() => setIsAddOpen(true)} className="btn-gradient px-6">
+            <Button onClick={() => setIsAddOpen(true)} className="btn-gradient px-6 shadow-md">
               <Plus className="mr-2 h-4 w-4" /> Add Expense
             </Button>
           </div>
@@ -216,17 +214,17 @@ export function HomePage() {
                       : `Carry-forward logic is active.`
                     }
                     {metrics.isOverridden && (
-                      <span className="ml-2 inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight">Manual Override</span>
+                      <span className="ml-2 inline-flex items-center rounded-md bg-primary/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-tight">Manual Override</span>
                     )}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {!isEditingCarry ? (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-9 text-xs gap-1.5 hover:bg-primary/10"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 text-xs gap-1.5 hover:bg-primary/10 font-bold"
                     onClick={() => {
                       setManualValue(metrics.carriedBalance.toString());
                       setIsEditingCarry(true);
@@ -236,14 +234,14 @@ export function HomePage() {
                   </Button>
                 ) : (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                    <Input 
-                      type="number" 
-                      value={manualValue} 
+                    <Input
+                      type="number"
+                      value={manualValue}
                       onChange={e => setManualValue(e.target.value)}
-                      className="h-9 w-28 bg-background text-sm font-medium"
+                      className="h-9 w-28 bg-background text-sm font-medium border-primary/20 focus-visible:ring-primary/30"
                       autoFocus
                     />
-                    <Button size="icon" className="h-9 w-9" onClick={handleUpdateManualCarry}>
+                    <Button size="icon" className="h-9 w-9 bg-primary" onClick={handleUpdateManualCarry}>
                       <Check className="h-4 w-4" />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setIsEditingCarry(false)}>
@@ -283,38 +281,38 @@ export function HomePage() {
             </div>
             <div className="bg-card rounded-2xl p-6 shadow-soft space-y-5 border border-border/60">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg tracking-tight">Recent Activity</h3>
-                <Button variant="ghost" size="sm" asChild className="text-xs font-bold text-primary">
-                  <Link to="/history">View History</Link>
+                <h3 className="font-bold text-lg tracking-tight">Recent Activity</h3>
+                <Button variant="ghost" size="sm" asChild className="text-xs font-black text-primary hover:bg-primary/5 uppercase tracking-wider">
+                  <Link to="/history">View All</Link>
                 </Button>
               </div>
               <div className="space-y-4">
                 {metrics.currentMonthExpenses.length === 0 ? (
                   <div className="py-24 flex flex-col items-center justify-center text-muted-foreground">
-                    <div className="p-4 bg-secondary rounded-2xl mb-4 opacity-40">
+                    <div className="p-4 bg-secondary/50 rounded-2xl mb-4 opacity-40">
                       <Receipt className="h-10 w-10" />
                     </div>
-                    <p className="text-sm font-semibold">No recent transactions</p>
-                    <p className="text-xs opacity-70">Add an expense to get started</p>
+                    <p className="text-sm font-bold">No transactions yet</p>
+                    <p className="text-[10px] opacity-70 uppercase tracking-widest font-medium">Add an expense to start tracking</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {metrics.currentMonthExpenses.slice(0, 6).map((expense) => (
-                      <div key={expense.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-accent/40 transition-all border border-transparent hover:border-border">
+                      <div key={expense.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-accent/40 transition-all border border-transparent hover:border-border group">
                         <div className="flex items-center gap-4 overflow-hidden">
-                          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-xs font-black text-primary shrink-0 group-hover:scale-110 transition-transform">
                             {expense.category[0]}
                           </div>
                           <div className="overflow-hidden">
-                            <p className="text-sm font-semibold truncate leading-none mb-1.5">
+                            <p className="text-sm font-bold truncate leading-none mb-1.5">
                               {expense.description || expense.category}
                             </p>
-                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight opacity-70">
                               {format(new Date(expense.date), 'MMM d • h:mm a')}
                             </p>
                           </div>
                         </div>
-                        <div className="text-sm font-bold text-rose-500 whitespace-nowrap ml-4">
+                        <div className="text-sm font-black text-rose-500 whitespace-nowrap ml-4">
                           -{metrics.currency}{expense.amount.toLocaleString()}
                         </div>
                       </div>
