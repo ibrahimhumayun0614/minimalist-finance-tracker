@@ -1,6 +1,6 @@
 # Cloudflare Workers Full-Stack Template
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ibrahimhumayun0614/minimalist-finance-tracker)
 
 A production-ready full-stack boilerplate powered by Cloudflare Workers, featuring Durable Objects for stateful entities, Hono for the API, React with TanStack Query for the frontend, shadcn/ui for components, and Tailwind CSS for styling. This template demonstrates a real-world chat application with users, chat boards, and messages, while providing an extensible foundation for your own projects.
 
@@ -139,7 +139,7 @@ Deploy to Cloudflare Workers (free tier available):
 
 Your app will be live at `https://<your-worker>.<your-subdomain>.workers.dev`.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ibrahimhumayun0614/minimalist-finance-tracker)
 
 **Pro Tip**: Enable Observability in Cloudflare dashboard for logs/metrics.
 
