@@ -1,5 +1,5 @@
 import { IndexedEntity, Entity } from "./core-utils";
-import type { Expense, UserSettings } from "@shared/types";
+import type { Expense, UserSettings } from "../shared/types";
 export class UserSettingsEntity extends Entity<UserSettings> {
   static readonly entityName = "user-settings";
   static readonly initialState: UserSettings = {

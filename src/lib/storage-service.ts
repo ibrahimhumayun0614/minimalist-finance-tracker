@@ -1,4 +1,4 @@
-import type { Expense, UserSettings } from "@shared/types";
+import type { Expense, UserSettings } from "../../shared/types";
 import { UserSettingsEntity, ExpenseEntity } from "../../worker/entities";
 import type { Env } from "../../worker/core-utils";
 /**
@@ -7,8 +7,9 @@ import type { Env } from "../../worker/core-utils";
  */
 export class StorageService {
   // Safe environment detection for Browser, Worker, and Node (Vercel) contexts.
-  private static isVercel = typeof globalThis !== 'undefined' && 
-    (globalThis as any).process?.env?.VERCEL === '1';
+  private static isVercel = typeof globalThis !== 'undefined' &&
+    typeof (globalThis as any).process !== 'undefined' &&
+    (globalThis as any).process.env?.VERCEL === '1';
   static async getSettings(env?: Env): Promise<UserSettings> {
     if (this.isVercel) {
       // In a Vercel environment, we return initial state or would query Vercel-specific storage.

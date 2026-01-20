@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { StorageService } from '../src/lib/storage-service';
 import { ok, bad } from './core-utils';
-import type { Expense, UserSettings } from "@shared/types";
+import type { Expense, UserSettings } from "../shared/types";
 let initialized = false;
 export const userRoutes = (app: Hono<{ Bindings: Env }>) => {
   if (initialized) {
