@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "fiscal-flow-u7uojrdid3almjnl4avhc",
+	"name": "minimalist-finance-trackerr",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
