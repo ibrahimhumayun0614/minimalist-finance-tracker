@@ -1,18 +1,17 @@
-import type { Expense, UserSettings } from "../../shared/types";
+import type { Expense, UserSettings, ApiResponse } from "@shared/types";
 import { UserSettingsEntity, ExpenseEntity } from "../../worker/entities";
 import type { Env } from "../../worker/core-utils";
 /**
  * StorageService provides a platform-agnostic interface for data operations.
- * It detects the environment safely without causing build-time TypeScript errors.
+ * It detects the environment and routes calls to either Cloudflare Durable Objects
+ * or Vercel-compatible logic (mocked/SQL structure).
  */
 export class StorageService {
-  // Safe environment detection for Browser, Worker, and Node (Vercel) contexts.
-  private static isVercel = typeof globalThis !== 'undefined' &&
-    typeof (globalThis as any).process !== 'undefined' &&
-    (globalThis as any).process.env?.VERCEL === '1';
+  private static isVercel = typeof process !== 'undefined' && process.env?.VERCEL === '1';
   static async getSettings(env?: Env): Promise<UserSettings> {
     if (this.isVercel) {
-      // In a Vercel environment, we return initial state or would query Vercel-specific storage.
+      // In a real Vercel migration, this would query Vercel Postgres/KV
+      // For now, we return the initial state or a mock to maintain runtime stability
       return {
         id: "default",
         currency: "USD",

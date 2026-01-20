@@ -1,10 +1,13 @@
 import { ApiResponse } from "../../shared/types"
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  // Ensure we don't have double slashes if path starts with /
+  const url = path.startsWith('/') ? path : `/${path}`;
   try {
-    const res = await fetch(path, {
+    const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-Platform-Request': 'true'
       },
       ...init
     });
@@ -14,34 +17,30 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
       try {
         json = (await res.json()) as ApiResponse<T>;
         if (json.detail) {
-          console.error(`[SERVER DETAIL ${path} ${res.status}]:`, json.detail);
+          console.error(`[API DETAIL ${url}]:`, json.detail);
         }
       } catch (parseError) {
         const text = await res.clone().text();
-        console.error(`[API] JSON Parse Error at ${path}. Status: ${res.status}. Content: ${text.slice(0, 100)}`);
-        throw new Error(`Invalid JSON response from ${path}`);
+        throw new Error(`Invalid JSON response from ${url}: ${text.slice(0, 50)}`);
       }
     } else {
       const text = await res.text();
-      console.error(`[API] Non-JSON response from ${path} (Status ${res.status}):`, text.slice(0, 200));
-      if (res.status === 500) {
-        throw new Error(`Worker Error: ${text || 'Check worker logs'}`);
+      if (res.status === 404) {
+        throw new Error(`API Route Not Found: ${url}`);
       }
-      throw new Error(`Server returned non-JSON response: ${res.status}`);
+      throw new Error(`Server returned non-JSON response (${res.status}): ${text.slice(0, 100)}`);
     }
     if (!res.ok || !json.success) {
       const errorMessage = json.error || `Request failed with status ${res.status}`;
-      console.warn(`[API] ${res.status} ${path}:`, errorMessage);
       throw new Error(errorMessage);
     }
     if (json.data === undefined) {
-      console.error(`[API] Success true but data missing at ${path}`);
       throw new Error('API success but no data payload');
     }
     return json.data;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[API] Fatal request error for ${path}:`, msg);
+    console.error(`[API FATAL] ${url}:`, msg);
     throw error;
   }
 }
